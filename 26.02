@@ -1,0 +1,167 @@
+#include <iostream>
+#include <cmath>
+
+using namespace std;
+
+class Circle {
+private:
+    double radius;
+    const double PI = 3.14159265358979323846;
+    
+public:
+    // Конструкторы
+    Circle() : radius(1.0) {}
+    Circle(double r) : radius(r > 0 ? r : 1.0) {}
+    
+    // Методы доступа
+    double getRadius() const { return radius; }
+    void setRadius(double r) { 
+        if (r > 0) radius = r; 
+    }
+    
+    // Длина окружности
+    double getCircumference() const {
+        return 2 * PI * radius;
+    }
+    
+    // Площадь круга
+    double getArea() const {
+        return PI * radius * radius;
+    }
+    
+    // Перегрузка оператора == (равенство радиусов)
+    bool operator==(const Circle& other) const {
+        return abs(radius - other.radius) < 0.000001; // Сравнение с точностью
+    }
+    
+    // Перегрузка оператора > (сравнение длин окружностей)
+    bool operator>(const Circle& other) const {
+        return getCircumference() > other.getCircumference();
+    }
+    
+    // Перегрузка оператора < (сравнение длин окружностей)
+    bool operator<(const Circle& other) const {
+        return getCircumference() < other.getCircumference();
+    }
+    
+    // Перегрузка оператора += (увеличение радиуса)
+    Circle& operator+=(double value) {
+        if (radius + value > 0) {
+            radius += value;
+        }
+        return *this;
+    }
+    
+    // Перегрузка оператора -= (уменьшение радиуса)
+    Circle& operator-=(double value) {
+        if (radius - value > 0) {
+            radius -= value;
+        }
+        return *this;
+    }
+    
+    // Перегрузка оператора вывода
+    friend ostream& operator<<(ostream& os, const Circle& c) {
+        os << "Circle: radius = " << c.radius 
+           << ", circumference = " << c.getCircumference()
+           << ", area = " << c.getArea();
+        return os;
+    }
+};
+---------------------------------------
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+class Airplane {
+private:
+    string type;          // Тип самолета
+    int maxPassengers;    // Максимальное количество пассажиров
+    int currentPassengers;// Текущее количество пассажиров
+    
+public:
+    // Конструкторы
+    Airplane() : type("Unknown"), maxPassengers(100), currentPassengers(0) {}
+    Airplane(string t, int maxP) : type(t), maxPassengers(maxP > 0 ? maxP : 100), currentPassengers(0) {}
+    
+    // Методы доступа
+    string getType() const { return type; }
+    int getMaxPassengers() const { return maxPassengers; }
+    int getCurrentPassengers() const { return currentPassengers; }
+    
+    void setType(string t) { type = t; }
+    void setCurrentPassengers(int p) { 
+        if (p >= 0 && p <= maxPassengers) {
+            currentPassengers = p;
+        }
+    }
+    
+    // Проверка возможности посадки пассажиров
+    bool canBoard(int passengers) const {
+        return currentPassengers + passengers <= maxPassengers;
+    }
+    
+    // Проверка возможности высадки пассажиров
+    bool canDisembark(int passengers) const {
+        return currentPassengers - passengers >= 0;
+    }
+    
+    // Перегрузка оператора == (равенство типов самолетов)
+    bool operator==(const Airplane& other) const {
+        return type == other.type;
+    }
+    
+    // Перегрузка оператора != (неравенство типов самолетов)
+    bool operator!=(const Airplane& other) const {
+        return !(*this == other);
+    }
+    
+    // Перегрузка оператора > (сравнение по максимальному количеству пассажиров)
+    bool operator>(const Airplane& other) const {
+        return maxPassengers > other.maxPassengers;
+    }
+    
+    // Перегрузка оператора < (сравнение по максимальному количеству пассажиров)
+    bool operator<(const Airplane& other) const {
+        return maxPassengers < other.maxPassengers;
+    }
+    
+    // Префиксный ++ (увеличение пассажиров на 1)
+    Airplane& operator++() {
+        if (currentPassengers < maxPassengers) {
+            currentPassengers++;
+        }
+        return *this;
+    }
+    
+    // Постфиксный ++ (увеличение пассажиров на 1)
+    Airplane operator++(int) {
+        Airplane temp = *this;
+        ++(*this);
+        return temp;
+    }
+    
+    // Префиксный -- (уменьшение пассажиров на 1)
+    Airplane& operator--() {
+        if (currentPassengers > 0) {
+            currentPassengers--;
+        }
+        return *this;
+    }
+    
+    // Постфиксный -- (уменьшение пассажиров на 1)
+    Airplane operator--(int) {
+        Airplane temp = *this;
+        --(*this);
+        return temp;
+    }
+    
+    // Перегрузка оператора вывода
+    friend ostream& operator<<(ostream& os, const Airplane& a) {
+        os << "Airplane: type = '" << a.type 
+           << "', max passengers = " << a.maxPassengers
+           << ", current passengers = " << a.currentPassengers;
+        return os;
+    }
+};
