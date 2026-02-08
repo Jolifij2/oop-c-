@@ -1,0 +1,285 @@
+#include <iostream>
+#include <cmath>
+#include <type_traits>
+#include <string>
+
+using namespace std;
+
+// ============== ЗАДАНИЕ 1 ==============
+// Шаблон функции для поиска среднего арифметического значений массива
+template<typename T>
+T average(const T arr[], int size) {
+    // Проверка на пустой массив
+    if (size <= 0) {
+        return T(0);
+    }
+    
+    T sum = T(0);
+    for (int i = 0; i < size; i++) {
+        sum += arr[i];
+    }
+    return sum / static_cast<T>(size);
+}
+
+// Специализация для типа string (чтобы избежать деления строки)
+template<>
+string average(const string arr[], int size) {
+    if (size <= 0) {
+        return "";
+    }
+    
+    // Для строк возвращаем конкатенацию или другую логику
+    string result = "Average for strings is not defined. Using concatenation: ";
+    for (int i = 0; i < size; i++) {
+        result += arr[i];
+        if (i < size - 1) result += ", ";
+    }
+    return result;
+}
+
+// ============== ЗАДАНИЕ 2 ==============
+// Перегруженные шаблоны функций для решения уравнений
+
+// 1. Шаблон для линейного уравнения: a*x + b = 0
+template<typename T>
+bool solveLinearEquation(T a, T b, T& result) {
+    // Если a == 0
+    if (abs(a) < numeric_limits<T>::epsilon()) {
+        if (abs(b) < numeric_limits<T>::epsilon()) {
+            // 0*x + 0 = 0 - бесконечно много решений
+            return true;
+        } else {
+            // 0*x + b = 0, где b != 0 - нет решений
+            return false;
+        }
+    }
+    
+    // x = -b / a
+    result = -b / a;
+    return true;
+}
+
+// 2. Шаблон для квадратного уравнения: a*x^2 + b*x + c = 0
+template<typename T>
+int solveQuadraticEquation(T a, T b, T c, T& x1, T& x2) {
+    // Проверка, является ли уравнение линейным (a = 0)
+    if (abs(a) < numeric_limits<T>::epsilon()) {
+        // Становится линейным уравнением: b*x + c = 0
+        if (solveLinearEquation(b, c, x1)) {
+            x2 = x1; // Для совместимости
+            return 1; // Один корень
+        }
+        return 0; // Нет решений
+    }
+    
+    // Вычисляем дискриминант
+    T discriminant = b * b - T(4) * a * c;
+    
+    // Проверяем дискриминант
+    if (discriminant < T(0)) {
+        // Нет действительных корней
+        return 0;
+    } else if (abs(discriminant) < numeric_limits<T>::epsilon()) {
+        // Один корень (два одинаковых)
+        x1 = x2 = -b / (T(2) * a);
+        return 1;
+    } else {
+        // Два корня
+        T sqrtDiscriminant = sqrt(discriminant);
+        x1 = (-b + sqrtDiscriminant) / (T(2) * a);
+        x2 = (-b - sqrtDiscriminant) / (T(2) * a);
+        return 2;
+    }
+}
+
+// ============== ЗАДАНИЕ 3 ==============
+// Шаблон функции, которая возвращает максимум из двух переданных параметров
+template<typename T>
+T maximum(const T& a, const T& b) {
+    return (a > b) ? a : b;
+}
+
+// ============== ЗАДАНИЕ 4 ==============
+// Шаблон функции, которая возвращает минимум из двух переданных параметров
+template<typename T>
+T minimum(const T& a, const T& b) {
+    return (a < b) ? a : b;
+}
+
+// ============== Дополнительные функции для красивого вывода ==============
+template<typename T>
+void printArray(const T arr[], int size) {
+    cout << "[";
+    for (int i = 0; i < size; i++) {
+        cout << arr[i];
+        if (i < size - 1) cout << ", ";
+    }
+    cout << "]";
+}
+
+void printEquationResults(int numRoots, double x1, double x2 = 0) {
+    switch (numRoots) {
+        case 0:
+            cout << "Нет действительных корней" << endl;
+            break;
+        case 1:
+            cout << "Один корень: x = " << x1 << endl;
+            break;
+        case 2:
+            cout << "Два корня: x1 = " << x1 << ", x2 = " << x2 << endl;
+            break;
+        default:
+            cout << "Бесконечно много решений" << endl;
+            break;
+    }
+}
+
+// ============== Функция main для демонстрации ==============
+int main() {
+    cout << "============== ДЕМОНСТРАЦИЯ РАБОТЫ ШАБЛОНОВ ФУНКЦИЙ ==============" << endl;
+    
+    // ============== Тестирование задания 1 ==============
+    cout << "\n--- ЗАДАНИЕ 1: Среднее арифметическое массива ---" << endl;
+    
+    // Массив целых чисел
+    int intArr[] = {1, 2, 3, 4, 5};
+    int intSize = sizeof(intArr) / sizeof(intArr[0]);
+    cout << "Массив целых чисел: ";
+    printArray(intArr, intSize);
+    cout << "\nСреднее: " << average(intArr, intSize) << endl;
+    
+    // Массив вещественных чисел
+    double doubleArr[] = {1.5, 2.5, 3.5, 4.5, 5.5};
+    int doubleSize = sizeof(doubleArr) / sizeof(doubleArr[0]);
+    cout << "\nМассив вещественных чисел: ";
+    printArray(doubleArr, doubleSize);
+    cout << "\nСреднее: " << average(doubleArr, doubleSize) << endl;
+    
+    // Массив символов
+    char charArr[] = {10, 20, 30, 40, 50};
+    int charSize = sizeof(charArr) / sizeof(charArr[0]);
+    cout << "\nМассив символов (как чисел): ";
+    printArray(charArr, charSize);
+    cout << "\nСреднее: " << static_cast<int>(average(charArr, charSize)) << endl;
+    
+    // ============== Тестирование задания 2 ==============
+    cout << "\n\n--- ЗАДАНИЕ 2: Решение уравнений ---" << endl;
+    
+    // Линейные уравнения
+    cout << "\n1. Линейные уравнения:" << endl;
+    
+    double result;
+    
+    // Уравнение: 2x + 4 = 0
+    if (solveLinearEquation(2.0, 4.0, result)) {
+        cout << "2x + 4 = 0 => x = " << result << endl;
+    } else {
+        cout << "2x + 4 = 0 => Нет решений" << endl;
+    }
+    
+    // Уравнение: 0x + 5 = 0
+    if (solveLinearEquation(0.0, 5.0, result)) {
+        cout << "0x + 5 = 0 => x = " << result << endl;
+    } else {
+        cout << "0x + 5 = 0 => Нет решений" << endl;
+    }
+    
+    // Уравнение: 0x + 0 = 0
+    if (solveLinearEquation(0.0, 0.0, result)) {
+        cout << "0x + 0 = 0 => Бесконечно много решений" << endl;
+    } else {
+        cout << "0x + 0 = 0 => Нет решений" << endl;
+    }
+    
+    // Квадратные уравнения
+    cout << "\n2. Квадратные уравнения:" << endl;
+    
+    double x1, x2;
+    
+    // Уравнение: x^2 - 5x + 6 = 0
+    int roots1 = solveQuadraticEquation(1.0, -5.0, 6.0, x1, x2);
+    cout << "x^2 - 5x + 6 = 0 => ";
+    printEquationResults(roots1, x1, x2);
+    
+    // Уравнение: x^2 - 4x + 4 = 0
+    int roots2 = solveQuadraticEquation(1.0, -4.0, 4.0, x1, x2);
+    cout << "x^2 - 4x + 4 = 0 => ";
+    printEquationResults(roots2, x1, x2);
+    
+    // Уравнение: x^2 + x + 1 = 0
+    int roots3 = solveQuadraticEquation(1.0, 1.0, 1.0, x1, x2);
+    cout << "x^2 + x + 1 = 0 => ";
+    printEquationResults(roots3, x1, x2);
+    
+    // Уравнение: 0x^2 + 3x - 6 = 0 (линейное)
+    int roots4 = solveQuadraticEquation(0.0, 3.0, -6.0, x1, x2);
+    cout << "0x^2 + 3x - 6 = 0 => ";
+    printEquationResults(roots4, x1, x2);
+    
+    // Тестирование с целыми коэффициентами
+    cout << "\n3. Квадратные уравнения с целыми коэффициентами:" << endl;
+    int ix1, ix2;
+    int roots5 = solveQuadraticEquation(1, -3, 2, ix1, ix2);
+    cout << "x^2 - 3x + 2 = 0 => ";
+    printEquationResults(roots5, ix1, ix2);
+    
+    // ============== Тестирование задания 3 и 4 ==============
+    cout << "\n\n--- ЗАДАНИЕ 3 и 4: Максимум и минимум ---" << endl;
+    
+    // Целые числа
+    int a = 10, b = 20;
+    cout << "\nЦелые числа: a = " << a << ", b = " << b << endl;
+    cout << "Максимум: " << maximum(a, b) << endl;
+    cout << "Минимум: " << minimum(a, b) << endl;
+    
+    // Вещественные числа
+    double d1 = 3.14, d2 = 2.71;
+    cout << "\nВещественные числа: d1 = " << d1 << ", d2 = " << d2 << endl;
+    cout << "Максимум: " << maximum(d1, d2) << endl;
+    cout << "Минимум: " << minimum(d1, d2) << endl;
+    
+    // Символы
+    char c1 = 'A', c2 = 'Z';
+    cout << "\nСимволы: c1 = '" << c1 << "', c2 = '" << c2 << "'" << endl;
+    cout << "Максимум: '" << maximum(c1, c2) << "'" << endl;
+    cout << "Минимум: '" << minimum(c1, c2) << "'" << endl;
+    
+    // Строки
+    string s1 = "apple", s2 = "banana";
+    cout << "\nСтроки: s1 = \"" << s1 << "\", s2 = \"" << s2 << "\"" << endl;
+    cout << "Максимум: \"" << maximum(s1, s2) << "\"" << endl;
+    cout << "Минимум: \"" << minimum(s1, s2) << "\"" << endl;
+    
+    // ============== Дополнительные тесты ==============
+    cout << "\n\n--- ДОПОЛНИТЕЛЬНЫЕ ТЕСТЫ ---" << endl;
+    
+    // Тестирование со специфическими значениями
+    cout << "\n1. Граничные значения:" << endl;
+    cout << "maximum(5, 5) = " << maximum(5, 5) << endl;
+    cout << "minimum(5, 5) = " << minimum(5, 5) << endl;
+    
+    cout << "\n2. Отрицательные числа:" << endl;
+    cout << "maximum(-10, -5) = " << maximum(-10, -5) << endl;
+    cout << "minimum(-10, -5) = " << minimum(-10, -5) << endl;
+    
+    cout << "\n3. Смешанные знаки:" << endl;
+    cout << "maximum(-5, 5) = " << maximum(-5, 5) << endl;
+    cout << "minimum(-5, 5) = " << minimum(-5, 5) << endl;
+    
+    // Тестирование уравнения с разными типами
+    cout << "\n4. Уравнения с разными типами:" << endl;
+    
+    // С float
+    float fx1, fx2;
+    int floatRoots = solveQuadraticEquation(1.0f, -3.0f, 2.0f, fx1, fx2);
+    cout << "float: x^2 - 3x + 2 = 0 => ";
+    printEquationResults(floatRoots, fx1, fx2);
+    
+    // С long double
+    long double lx1, lx2;
+    int longRoots = solveQuadraticEquation(1.0L, -3.0L, 2.0L, lx1, lx2);
+    cout << "long double: x^2 - 3x + 2 = 0 => ";
+    printEquationResults(longRoots, lx1, lx2);
+    
+    return 0;
+}
