@@ -1,0 +1,452 @@
+#include <iostream>
+#include <stdexcept>
+#include <algorithm>
+#include <initializer_list>
+
+using namespace std;
+
+template<typename T>
+class Array {
+private:
+    T* data;           // Указатель на массив данных
+    int size;          // Текущий размер массива (выделенная память)
+    int grow;          // Шаг увеличения размера
+    int count;         // Количество фактически хранящихся элементов
+
+    // Вспомогательная функция для увеличения размера при необходимости
+    void ensureCapacity(int requiredCapacity) {
+        if (requiredCapacity <= size) {
+            return;
+        }
+        
+        // Вычисляем новый размер с учетом шага grow
+        int newSize = size;
+        while (newSize < requiredCapacity) {
+            newSize += grow;
+        }
+        
+        // Выделяем новую память
+        T* newData = new T[newSize];
+        
+        // Копируем существующие элементы
+        for (int i = 0; i < count; i++) {
+            newData[i] = data[i];
+        }
+        
+        // Освобождаем старую память
+        delete[] data;
+        
+        // Обновляем указатель и размер
+        data = newData;
+        size = newSize;
+    }
+
+public:
+    // Конструкторы
+    Array() : data(nullptr), size(0), grow(1), count(0) {}
+    
+    Array(int initialSize, int growValue = 1) : grow(growValue), count(0) {
+        if (initialSize < 0) {
+            throw invalid_argument("Размер массива не может быть отрицательным");
+        }
+        if (growValue <= 0) {
+            throw invalid_argument("Шаг увеличения должен быть положительным");
+        }
+        
+        size = initialSize;
+        data = new T[size];
+    }
+    
+    Array(const Array& other) : size(other.size), grow(other.grow), count(other.count) {
+        data = new T[size];
+        for (int i = 0; i < count; i++) {
+            data[i] = other.data[i];
+        }
+    }
+    
+    Array(initializer_list<T> initList, int growValue = 1) : grow(growValue) {
+        count = initList.size();
+        size = count + growValue - (count % growValue); // Округляем до ближайшего кратного grow
+        data = new T[size];
+        
+        int i = 0;
+        for (const T& value : initList) {
+            data[i++] = value;
+        }
+    }
+    
+    // Деструктор
+    ~Array() {
+        delete[] data;
+    }
+    
+    // 1. GetSize – получение размера массива
+    int GetSize() const {
+        return size;
+    }
+    
+    // 2. SetSize – установка размера массива
+    void SetSize(int newSize, int newGrow = 1) {
+        if (newSize < 0) {
+            throw invalid_argument("Размер массива не может быть отрицательным");
+        }
+        if (newGrow <= 0) {
+            throw invalid_argument("Шаг увеличения должен быть положительным");
+        }
+        
+        grow = newGrow;
+        
+        if (newSize == size) {
+            return;
+        }
+        
+        if (newSize < size) {
+            // Уменьшаем размер
+            if (count > newSize) {
+                count = newSize;
+            }
+            
+            T* newData = new T[newSize];
+            for (int i = 0; i < count; i++) {
+                newData[i] = data[i];
+            }
+            
+            delete[] data;
+            data = newData;
+            size = newSize;
+        } else {
+            // Увеличиваем размер
+            T* newData = new T[newSize];
+            for (int i = 0; i < count; i++) {
+                newData[i] = data[i];
+            }
+            
+            delete[] data;
+            data = newData;
+            size = newSize;
+        }
+    }
+    
+    // 3. GetUpperBound - получение последнего допустимого индекса
+    int GetUpperBound() const {
+        return count - 1;
+    }
+    
+    // 4. IsEmpty - проверка, пуст ли массив
+    bool IsEmpty() const {
+        return count == 0;
+    }
+    
+    // 5. FreeExtra - удалить «лишнюю» память
+    void FreeExtra() {
+        if (count == size) {
+            return;
+        }
+        
+        if (count == 0) {
+            delete[] data;
+            data = nullptr;
+            size = 0;
+            return;
+        }
+        
+        T* newData = new T[count];
+        for (int i = 0; i < count; i++) {
+            newData[i] = data[i];
+        }
+        
+        delete[] data;
+        data = newData;
+        size = count;
+    }
+    
+    // 6. RemoveAll – удалить все элементы
+    void RemoveAll() {
+        delete[] data;
+        data = nullptr;
+        size = 0;
+        count = 0;
+    }
+    
+    // 7. GetAt - получение элемента по индексу
+    T& GetAt(int index) {
+        if (index < 0 || index >= count) {
+            throw out_of_range("Индекс выходит за границы массива");
+        }
+        return data[index];
+    }
+    
+    const T& GetAt(int index) const {
+        if (index < 0 || index >= count) {
+            throw out_of_range("Индекс выходит за границы массива");
+        }
+        return data[index];
+    }
+    
+    // 8. SetAt - установка нового значения для элемента
+    void SetAt(int index, const T& value) {
+        if (index < 0 || index >= size) {
+            throw out_of_range("Индекс выходит за границы массива");
+        }
+        
+        if (index >= count) {
+            count = index + 1;
+        }
+        
+        data[index] = value;
+    }
+    
+    // 9. operator[] - доступ к элементу по индексу
+    T& operator[](int index) {
+        return GetAt(index);
+    }
+    
+    const T& operator[](int index) const {
+        return GetAt(index);
+    }
+    
+    // 10. Add – добавление элемента в массив
+    int Add(const T& value) {
+        ensureCapacity(count + 1);
+        data[count] = value;
+        return count++; // Возвращаем индекс добавленного элемента
+    }
+    
+    // 11. Append – «сложение» двух массивов
+    void Append(const Array& other) {
+        int requiredCapacity = count + other.count;
+        ensureCapacity(requiredCapacity);
+        
+        for (int i = 0; i < other.count; i++) {
+            data[count + i] = other.data[i];
+        }
+        
+        count += other.count;
+    }
+    
+    // 12. operator= - оператор присваивания
+    Array& operator=(const Array& other) {
+        if (this == &other) {
+            return *this;
+        }
+        
+        delete[] data;
+        
+        size = other.size;
+        grow = other.grow;
+        count = other.count;
+        
+        data = new T[size];
+        for (int i = 0; i < count; i++) {
+            data[i] = other.data[i];
+        }
+        
+        return *this;
+    }
+    
+    // 13. GetData – получение адреса массива с данными
+    T* GetData() {
+        return data;
+    }
+    
+    const T* GetData() const {
+        return data;
+    }
+    
+    // 14. InsertAt – вставка элемента(-ов) в заданную позицию
+    void InsertAt(int index, const T& value) {
+        if (index < 0 || index > count) {
+            throw out_of_range("Индекс выходит за границы массива");
+        }
+        
+        ensureCapacity(count + 1);
+        
+        // Сдвигаем элементы вправо
+        for (int i = count; i > index; i--) {
+            data[i] = data[i - 1];
+        }
+        
+        // Вставляем новый элемент
+        data[index] = value;
+        count++;
+    }
+    
+    void InsertAt(int index, const Array& other) {
+        if (index < 0 || index > count) {
+            throw out_of_range("Индекс выходит за границы массива");
+        }
+        
+        int elementsToAdd = other.count;
+        ensureCapacity(count + elementsToAdd);
+        
+        // Сдвигаем элементы вправо
+        for (int i = count + elementsToAdd - 1; i >= index + elementsToAdd; i--) {
+            data[i] = data[i - elementsToAdd];
+        }
+        
+        // Вставляем новые элементы
+        for (int i = 0; i < elementsToAdd; i++) {
+            data[index + i] = other.data[i];
+        }
+        
+        count += elementsToAdd;
+    }
+    
+    // 15. RemoveAt – удаление элемента(-ов) с заданной позиции
+    void RemoveAt(int index, int n = 1) {
+        if (index < 0 || n <= 0 || index + n > count) {
+            throw out_of_range("Некорректные параметры для удаления");
+        }
+        
+        // Сдвигаем элементы влево
+        for (int i = index; i < count - n; i++) {
+            data[i] = data[i + n];
+        }
+        
+        count -= n;
+    }
+    
+    // Дополнительные полезные методы
+    int GetCount() const {
+        return count;
+    }
+    
+    int GetGrow() const {
+        return grow;
+    }
+    
+    // Метод для вывода содержимого массива
+    void Print() const {
+        cout << "Array (size: " << size << ", count: " << count << ", grow: " << grow << "): ";
+        if (IsEmpty()) {
+            cout << "empty";
+        } else {
+            for (int i = 0; i < count; i++) {
+                cout << data[i];
+                if (i < count - 1) cout << ", ";
+            }
+        }
+        cout << endl;
+    }
+};
+
+// Демонстрационная функция main
+int main() {
+    cout << "============ ДЕМОНСТРАЦИЯ КЛАССА ARRAY ============" << endl;
+    
+    // Создание массивов разными способами
+    cout << "\n1. Создание массивов:" << endl;
+    
+    Array<int> arr1; // Пустой массив
+    cout << "arr1 (пустой): "; arr1.Print();
+    
+    Array<int> arr2(5, 3); // Массив размером 5 с шагом увеличения 3
+    cout << "arr2 (размер 5, grow 3): "; arr2.Print();
+    
+    Array<int> arr3 = {1, 2, 3, 4, 5}; // С инициализатором
+    cout << "arr3 (инициализированный): "; arr3.Print();
+    
+    // Добавление элементов
+    cout << "\n2. Добавление элементов:" << endl;
+    for (int i = 0; i < 10; i++) {
+        arr1.Add(i * 10);
+    }
+    cout << "arr1 после добавления 10 элементов: "; arr1.Print();
+    cout << "GetSize(): " << arr1.GetSize() << endl;
+    cout << "GetUpperBound(): " << arr1.GetUpperBound() << endl;
+    
+    // Доступ к элементам
+    cout << "\n3. Доступ к элементам:" << endl;
+    cout << "arr1[3] = " << arr1[3] << endl;
+    cout << "arr1.GetAt(5) = " << arr1.GetAt(5) << endl;
+    
+    // Изменение элементов
+    cout << "\n4. Изменение элементов:" << endl;
+    arr1[3] = 999;
+    arr1.SetAt(5, 777);
+    cout << "arr1 после изменений: "; arr1.Print();
+    
+    // SetSize
+    cout << "\n5. Изменение размера (SetSize):" << endl;
+    cout << "До SetSize(15): "; arr1.Print();
+    arr1.SetSize(15, 5);
+    cout << "После SetSize(15, 5): "; arr1.Print();
+    
+    // Вставка элементов
+    cout << "\n6. Вставка элементов:" << endl;
+    arr3.InsertAt(2, 99);
+    cout << "arr3 после вставки 99 на позицию 2: "; arr3.Print();
+    
+    // Удаление элементов
+    cout << "\n7. Удаление элементов:" << endl;
+    arr3.RemoveAt(1, 2); // Удаляем 2 элемента, начиная с позиции 1
+    cout << "arr3 после удаления 2 элементов с позиции 1: "; arr3.Print();
+    
+    // Append
+    cout << "\n8. Сложение массивов (Append):" << endl;
+    Array<int> arr4 = {100, 200, 300};
+    cout << "arr1 до Append: "; arr1.Print();
+    cout << "arr4: "; arr4.Print();
+    arr1.Append(arr4);
+    cout << "arr1 после Append: "; arr1.Print();
+    
+    // FreeExtra
+    cout << "\n9. Освобождение лишней памяти (FreeExtra):" << endl;
+    cout << "До FreeExtra - GetSize(): " << arr1.GetSize() << ", GetCount(): " << arr1.GetCount() << endl;
+    arr1.FreeExtra();
+    cout << "После FreeExtra - GetSize(): " << arr1.GetSize() << ", GetCount(): " << arr1.GetCount() << endl;
+    
+    // Оператор присваивания
+    cout << "\n10. Оператор присваивания:" << endl;
+    Array<int> arr5;
+    arr5 = arr3;
+    cout << "arr5 (после arr5 = arr3): "; arr5.Print();
+    
+    // IsEmpty
+    cout << "\n11. Проверка пустоты:" << endl;
+    Array<int> emptyArr;
+    cout << "emptyArr.IsEmpty(): " << (emptyArr.IsEmpty() ? "true" : "false") << endl;
+    cout << "arr1.IsEmpty(): " << (arr1.IsEmpty() ? "true" : "false") << endl;
+    
+    // GetData
+    cout << "\n12. Получение указателя на данные (GetData):" << endl;
+    int* dataPtr = arr3.GetData();
+    if (dataPtr != nullptr && arr3.GetCount() > 0) {
+        cout << "Первый элемент через GetData(): " << *dataPtr << endl;
+    }
+    
+    // Работа с разными типами данных
+    cout << "\n13. Работа со строками:" << endl;
+    Array<string> strArr;
+    strArr.Add("Hello");
+    strArr.Add("World");
+    strArr.Add("from");
+    strArr.Add("Array");
+    strArr.Print();
+    
+    // Удаление всех элементов
+    cout << "\n14. Удаление всех элементов (RemoveAll):" << endl;
+    cout << "До RemoveAll: "; arr2.Print();
+    arr2.RemoveAll();
+    cout << "После RemoveAll: "; arr2.Print();
+    
+    // Тестирование граничных случаев и исключений
+    cout << "\n15. Тестирование исключений:" << endl;
+    try {
+        Array<int> testArr(5);
+        testArr.GetAt(10); // Должно вызвать исключение
+    } catch (const out_of_range& e) {
+        cout << "Поймано исключение: " << e.what() << endl;
+    }
+    
+    try {
+        Array<int> testArr(5);
+        testArr.SetAt(10, 100); // Должно вызвать исключение
+    } catch (const out_of_range& e) {
+        cout << "Поймано исключение: " << e.what() << endl;
+    }
+    
+    cout << "\n============ ТЕСТИРОВАНИЕ ЗАВЕРШЕНО ============" << endl;
+    
+    return 0;
+}
